@@ -58,7 +58,7 @@ public record IbActivityStatement(Header header, Account account,
 	/**
 	 * The precision to use for numbers.
 	 */
-	private static final int PRECISION = 4;
+	private static final int PRECISION = 5;
 
 	/**
 	 * Loads a statement from a CSV file.
