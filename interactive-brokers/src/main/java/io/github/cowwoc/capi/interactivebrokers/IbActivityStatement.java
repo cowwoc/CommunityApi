@@ -28,8 +28,8 @@ import java.util.Set;
 import java.util.StringJoiner;
 import java.util.function.Predicate;
 
-import static com.github.cowwoc.requirements10.java.DefaultJavaValidators.requireThat;
-import static com.github.cowwoc.requirements10.java.DefaultJavaValidators.that;
+import static io.github.cowwoc.requirements12.java.DefaultJavaValidators.requireThat;
+import static io.github.cowwoc.requirements12.java.DefaultJavaValidators.that;
 
 /**
  * An activity statement.
@@ -58,7 +58,7 @@ public record IbActivityStatement(Header header, Account account,
 	/**
 	 * The precision to use for numbers.
 	 */
-	private static final int PRECISION = 5;
+	private static final int PRECISION = 7;
 
 	/**
 	 * Loads a statement from a CSV file.
@@ -314,7 +314,6 @@ public record IbActivityStatement(Header header, Account account,
 	 * @throws NullPointerException if {@code sections} is null
 	 * @throws IOException          if an I/O error occurs while reading the lines
 	 */
-	@SuppressWarnings("PMD.NcssCount")
 	private static Map<String, CashActivity> parseCashActivities(List<Reader> sections) throws IOException
 	{
 		Map<String, CashActivity> activities = new HashMap<>();
@@ -904,7 +903,7 @@ public record IbActivityStatement(Header header, Account account,
 	 *                        are being bought.
 	 * @param price           the price of each unit
 	 * @param proceeds        The total amount received from the trade, which is negative if the trade resulted
-	 *                        in a cost
+	 *                        in a cost. The amount does not take commissions into consideration.
 	 * @param commission      the trade fees, typically represented as a negative value to indicate a cost. It
 	 *                        may be positive in the case of liquidity rebates, exchange incentives, or in the
 	 *                        case of an accounting correction.
@@ -929,8 +928,8 @@ public record IbActivityStatement(Header header, Account account,
 		 *                        option, helping to identify and differentiate transactions within the same
 		 *                        category
 		 * @param price           the price of each unit
-		 * @param proceeds        The total amount received from the trade, which is negative if the trade
-		 *                        resulted in a cost
+		 * @param proceeds        the total value of the assets traded. It is positive when the assets are sold
+		 *                        and negative when they are purchased.
 		 * @param commission      the trade fees, typically represented as a negative value to indicate a cost. It
 		 *                        may be positive in the case of liquidity rebates, exchange incentives, or in the
 		 *                        case of an accounting correction.
@@ -973,8 +972,8 @@ public record IbActivityStatement(Header header, Account account,
 	 * @param quantity       the quantity being traded; negative if securities are being sold, positive if they
 	 *                       are being bought.
 	 * @param price          the price of each unit
-	 * @param proceeds       The total amount received from the trade, which is negative if the trade resulted
-	 *                       in a cost
+	 * @param proceeds       the total value of the assets traded. It is positive when the assets are sold and
+	 *                       negative when they are purchased.
 	 * @param commission     the trade fees in USD, typically represented as a negative value to indicate a
 	 *                       cost. It may be positive in the case of liquidity rebates, exchange incentives, or
 	 *                       in the case of an accounting correction.

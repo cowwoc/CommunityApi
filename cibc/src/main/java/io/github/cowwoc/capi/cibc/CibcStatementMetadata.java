@@ -2,7 +2,7 @@ package io.github.cowwoc.capi.cibc;
 
 import java.time.LocalDate;
 
-import static com.github.cowwoc.requirements10.java.DefaultJavaValidators.requireThat;
+import static io.github.cowwoc.requirements12.java.DefaultJavaValidators.requireThat;
 
 /**
  * The metadata of an account statement.

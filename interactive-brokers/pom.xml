@@ -16,7 +16,7 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>com.github.cowwoc.requirements</groupId>
+			<groupId>io.github.cowwoc.requirements</groupId>
 			<artifactId>requirements-java</artifactId>
 		</dependency>
 		<dependency>

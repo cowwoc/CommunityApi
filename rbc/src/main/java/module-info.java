@@ -1,7 +1,7 @@
 /**
- * Canadian Imperial Bank of Canada.
+ * Royal Bank.
  */
-module io.github.cowwoc.capi.cibc
+module io.github.cowwoc.capi.rbc
 {
 	requires transitive io.github.cowwoc.capi.core;
 	requires io.github.cowwoc.pouch.core;
@@ -11,5 +11,5 @@ module io.github.cowwoc.capi.cibc
 	requires org.seleniumhq.selenium.support;
 	requires transitive org.seleniumhq.selenium.api;
 
-	exports io.github.cowwoc.capi.cibc;
+	exports io.github.cowwoc.capi.rbc;
 }

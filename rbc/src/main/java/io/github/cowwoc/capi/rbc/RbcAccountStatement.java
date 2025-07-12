@@ -1,4 +1,4 @@
-package io.github.cowwoc.capi.cibc;
+package io.github.cowwoc.capi.rbc;
 
 import java.nio.file.Path;
 import java.time.LocalDate;
@@ -12,7 +12,7 @@ import static io.github.cowwoc.requirements12.java.DefaultJavaValidators.require
  * @param accountNumber the account number
  * @param firstDay      the first day that is included in the statement
  */
-public record CibcAccountStatement(Path path, String accountNumber, LocalDate firstDay)
+public record RbcAccountStatement(Path path, String accountNumber, LocalDate firstDay)
 {
 	/**
 	 * Creates a new statement.
@@ -24,7 +24,7 @@ public record CibcAccountStatement(Path path, String accountNumber, LocalDate fi
 	 * @throws IllegalArgumentException if {@code accountNumber} contains leading or trailing whitespace or is
 	 *                                  empty
 	 */
-	public CibcAccountStatement
+	public RbcAccountStatement
 	{
 		requireThat(path, "path").isNotNull();
 		requireThat(accountNumber, "accountNumber").isStripped().isNotEmpty();

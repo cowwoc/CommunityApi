@@ -13,6 +13,7 @@
 	<modules>
 		<module>core</module>
 		<module>cibc</module>
+		<module>rbc</module>
 		<module>interactive-brokers</module>
 	</modules>
 
@@ -20,10 +21,10 @@
 		<project.root.basedir>${project.basedir}</project.root.basedir>
 		<maven.compiler.release>23</maven.compiler.release>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<pmd.version>7.11.0</pmd.version>
+		<pmd.version>7.15.0</pmd.version>
 		<checkstyle.plugin.version>3.6.0</checkstyle.plugin.version>
-		<selenium.version>4.29.0</selenium.version>
-		<jackson.version>2.18.3</jackson.version>
+		<selenium.version>4.34.0</selenium.version>
+		<jackson.version>2.19.1</jackson.version>
 	</properties>
 
 	<dependencyManagement>
@@ -39,9 +40,9 @@
 				<version>${selenium.version}</version>
 			</dependency>
 			<dependency>
-				<groupId>com.github.cowwoc.requirements</groupId>
+				<groupId>io.github.cowwoc.requirements</groupId>
 				<artifactId>requirements-java</artifactId>
-				<version>11.0</version>
+				<version>12.0</version>
 			</dependency>
 			<dependency>
 				<groupId>org.slf4j</groupId>
@@ -51,12 +52,12 @@
 			<dependency>
 				<groupId>com.fasterxml.jackson.dataformat</groupId>
 				<artifactId>jackson-dataformat-csv</artifactId>
-				<version>2.13.0</version>
+				<version>2.19.1</version>
 			</dependency>
 			<dependency>
 				<groupId>org.apache.logging.log4j</groupId>
 				<artifactId>log4j-to-slf4j</artifactId>
-				<version>2.24.3</version>
+				<version>2.25.0</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
@@ -178,6 +179,21 @@
 						</execution>
 					</executions>
 				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-release-plugin</artifactId>
+					<version>3.1.1</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-source-plugin</artifactId>
+					<version>3.3.1</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-javadoc-plugin</artifactId>
+					<version>3.11.2</version>
+				</plugin>
 			</plugins>
 		</pluginManagement>
 		<plugins>
@@ -269,4 +285,38 @@
 			</plugin>
 		</plugins>
 	</reporting>
+
+	<profiles>
+		<profile>
+			<id>release</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-source-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>attach-sources</id>
+								<goals>
+									<goal>jar-no-fork</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-javadoc-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>attach-javadocs</id>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>

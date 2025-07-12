@@ -1,32 +1,28 @@
-package io.github.cowwoc.capi.cibc;
+package io.github.cowwoc.capi.rbc;
 
-import java.nio.file.Path;
 import java.time.LocalDate;
 
 import static io.github.cowwoc.requirements12.java.DefaultJavaValidators.requireThat;
 
 /**
- * An account statement.
+ * The metadata of an account statement.
  *
- * @param path          the path of the statement
  * @param accountNumber the account number
  * @param firstDay      the first day that is included in the statement
  */
-public record CibcAccountStatement(Path path, String accountNumber, LocalDate firstDay)
+public record RbcStatementMetadata(String accountNumber, LocalDate firstDay)
 {
 	/**
-	 * Creates a new statement.
+	 * Creates a new instance.
 	 *
-	 * @param path          the path of the statement
 	 * @param accountNumber the account number
 	 * @param firstDay      the first day that is included in the statement
 	 * @throws NullPointerException     if any of the arguments are null
 	 * @throws IllegalArgumentException if {@code accountNumber} contains leading or trailing whitespace or is
 	 *                                  empty
 	 */
-	public CibcAccountStatement
+	public RbcStatementMetadata
 	{
-		requireThat(path, "path").isNotNull();
 		requireThat(accountNumber, "accountNumber").isStripped().isNotEmpty();
 		requireThat(firstDay, "firstDay").isNotNull();
 	}

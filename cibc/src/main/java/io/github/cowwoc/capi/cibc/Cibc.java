@@ -1,53 +1,65 @@
 package io.github.cowwoc.capi.cibc;
 
-import com.github.cowwoc.pouch.core.WrappedCheckedException;
+import io.github.cowwoc.capi.core.Browser;
 import io.github.cowwoc.capi.core.Download;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.net.URI;
-import java.nio.file.Paths;
-import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.github.cowwoc.requirements10.java.DefaultJavaValidators.requireThat;
+import static io.github.cowwoc.requirements12.java.DefaultJavaValidators.requireThat;
 
 /**
  * Utilities for the <a href="https://www.cibc.com/">CIBC website</a>.
  */
 public final class Cibc
 {
-	private static final By MY_DOCUMENTS = By.cssSelector(".docHub a");
-	private static final By ACCOUNT_STATEMENTS = By.xpath("//a[span[contains(text(),'Account statements')]]");
+	private static final By MY_DOCUMENTS = By.cssSelector("a[aria-label^=\"My Documents\"]");
+	private static final By ACCOUNT_STATEMENTS = By.xpath(
+		"//a[.//span[contains(text(),'Account statements')]]");
 	private static final By ACCOUNT_NUMBER = By.cssSelector("span.account-info span:nth-of-type(2)");
-	private static final By COLLAPSED_YEARS = By.cssSelector("div.ui-collapsible-pane.ui-collapsed button");
+	private static final By BACK_TO_ACCOUNT_NUMBERS = By.cssSelector(".go-back");
+	private static final By COLLAPSED_YEARS = By.cssSelector("div.ui-collapsible-pane.ui-collapsed h3 button");
 	private static final By STATEMENT_DATE = By.cssSelector("ul.statement-list div.tile-content span");
-	private static final Pattern MONTH_AND_YEAR = Pattern.compile("(\\w+)\\s+\\w+\\s+\\w+\\s+\\w+,\\s+(\\w+)");
+	// Example: April 19, 2025
+	private static final Pattern MONTH_AND_YEAR = Pattern.compile(
+		"^(\\w+)\\s+\\w+,\\s+(\\w+)");
+	// Example: March 20 to April 19, 2025
+	private static final Pattern MONTH_DAY_TO_MONTH_DAY_YEAR = Pattern.compile(
+		"^(\\w+)\\s\\w+\\s+\\w+\\s+\\w+,\\s+(\\w+)");
+	// Example: March 1 to 30, 2025
+	private static final Pattern MONTH_DAY_TO_DAY_YEAR = Pattern.compile(
+		"\\w+\\s\\w+\\s+\\w+\\s+(\\w+)\\s+\\w+,\\s+(\\w+)");
+	private final Browser browser;
 	private final WebDriver client;
 	private final Logger log = LoggerFactory.getLogger(Cibc.class);
 
 	/**
 	 * Creates a new instance.
 	 *
-	 * @param client a browser whose active tab is already logged into the website
-	 * @throws NullPointerException if {@code client} is null
+	 * @param browser a browser whose active tab is already logged into the website
+	 * @throws NullPointerException if {@code browser} is null
 	 */
-	public Cibc(WebDriver client)
+	public Cibc(Browser browser)
 	{
-		requireThat(client, "client").isNotNull();
-		this.client = client;
+		requireThat(browser, "browser").isNotNull();
+		this.browser = browser;
+		this.client = browser.getWebDriver();
 	}
 
 	/**
@@ -61,30 +73,49 @@ public final class Cibc
 	public List<CibcAccountStatement> download(Predicate<String> accountNumber,
 		Predicate<CibcStatementMetadata> statements)
 	{
+		Set<String> processed = new HashSet<>();
 		try
 		{
 			WebElement myDocuments = client.findElement(MY_DOCUMENTS);
-			myDocuments.click();
+			browser.clickToOpenWindow(myDocuments);
 
 			WebElement accountStatements = client.findElement(ACCOUNT_STATEMENTS);
 			accountStatements.click();
 
 			List<CibcAccountStatement> downloads = new ArrayList<>();
-			for (WebElement accountNumberElement : client.findElements(ACCOUNT_NUMBER))
+			while (true)
 			{
-				String accountNumberText = accountNumberElement.getText();
-				if (accountNumber.test(accountNumberText))
+				WebElement accountNumberElement = null;
+				// Elements must be reloaded each time because CIBC won't let us open a new tab and the old elements
+				// become stale.
+				for (WebElement candidate : client.findElements(ACCOUNT_NUMBER))
 				{
-					log.info("Stepping into account number: {}", accountNumberText);
-					accountNumberElement.click();
-					downloads.addAll(downloadStatements(accountNumberText, statements));
+					String accountNumberText = candidate.getText();
+					if (!processed.add(accountNumberText))
+						continue;
+					if (accountNumber.test(accountNumberText))
+					{
+						accountNumberElement = candidate;
+						break;
+					}
 				}
+				if (accountNumberElement == null)
+					break;
+				String accountNumberText = accountNumberElement.getText();
+				log.info("Stepping into account number: {}", accountNumberText);
+				accountNumberElement.click();
+				downloads.addAll(downloadStatements(accountNumberText, statements));
+				log.info("Stepping back");
+				WebElement backButton = client.findElement(BACK_TO_ACCOUNT_NUMBERS);
+				backButton.click();
 			}
 			return downloads;
 		}
 		catch (NoSuchElementException e)
 		{
-			log.debug("Page source: {}", client.getPageSource());
+			String dom = (String) ((JavascriptExecutor) client).
+				executeScript("return document.documentElement.outerHTML;");
+			log.debug("Page source: {}", dom);
 			throw e;
 		}
 	}
@@ -109,59 +140,31 @@ public final class Cibc
 		{
 			String text = statement.getText();
 			Matcher matcher = MONTH_AND_YEAR.matcher(text);
-			if (matcher.find())
+			boolean matchFound = matcher.find();
+			if (!matchFound)
 			{
-				int month = Integer.parseInt(matcher.group(1));
+				matcher = MONTH_DAY_TO_MONTH_DAY_YEAR.matcher(text);
+				matchFound = matcher.find();
+			}
+			if (!matchFound)
+			{
+				matcher = MONTH_DAY_TO_DAY_YEAR.matcher(text);
+				matchFound = matcher.find();
+			}
+			if (matchFound)
+			{
+				int month = Month.valueOf(matcher.group(1).toUpperCase(Locale.ROOT)).getValue();
 				int year = Integer.parseInt(matcher.group(2));
 				LocalDate firstDay = LocalDate.of(year, month, 1);
 				if (statements.test(new CibcStatementMetadata(accountNumber, firstDay)))
 				{
-					statement.click();
-					Download download = waitForDownload();
+					Instant now = Instant.now();
+					browser.click(statement);
+					Download download = browser.waitForDownload(now);
 					downloads.add(new CibcAccountStatement(download.target(), accountNumber, firstDay));
 				}
 			}
 		}
 		return downloads;
-	}
-
-	private Download waitForDownload()
-	{
-		// Based on https://stackoverflow.com/a/56570364/14731
-		String mainWindow = client.getWindowHandle();
-		client.get("chrome://downloads");
-
-		// Execute Javascript in a new tab
-		JavascriptExecutor js = (JavascriptExecutor) client;
-		// Look up the first element
-		WebElement downloadItemComponent = client.findElement(By.cssSelector("downloads-item"));
-		WebElement downloadItem = (WebElement) js.executeScript("return arguments[0].shadowRoot",
-			downloadItemComponent);
-		assert downloadItem != null;
-
-		WebDriverWait wait = new WebDriverWait(client, Duration.ofMinutes(1));
-		wait.until(_ ->
-		{
-			WebElement tag = downloadItem.findElement(By.id("tag"));
-			// innerText strips away comments
-			String tagText = (String) js.executeScript("return arguments[0].innerText", tag);
-			assert tagText != null;
-
-			if (!tagText.isEmpty())
-				throw WrappedCheckedException.wrap(new IOException("Download failed: " + tagText));
-			// If the download did not fail and a progress bar is not present then it is assumed to have completed
-			// successfully.
-			List<WebElement> progressBar = downloadItem.findElements(By.id("progress"));
-			return progressBar.isEmpty();
-		});
-		WebElement fileLink = downloadItem.findElement(By.id("file-link"));
-		String source = fileLink.getDomAttribute("href");
-		assert source != null;
-		String target = downloadItem.findElement(By.id("file-icon")).getDomAttribute("src");
-		assert target != null;
-		// Close the download tab
-		client.close();
-		client.switchTo().window(mainWindow);
-		return new Download(URI.create(source), Paths.get(URI.create(target)));
 	}
 }
