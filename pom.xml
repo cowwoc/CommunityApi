@@ -14,6 +14,7 @@
 		<module>core</module>
 		<module>cibc</module>
 		<module>rbc</module>
+		<module>fizz</module>
 		<module>interactive-brokers</module>
 	</modules>
 

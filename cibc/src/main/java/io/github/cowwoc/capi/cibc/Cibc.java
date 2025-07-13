@@ -80,7 +80,7 @@ public final class Cibc
 			browser.clickToOpenWindow(myDocuments);
 
 			WebElement accountStatements = client.findElement(ACCOUNT_STATEMENTS);
-			accountStatements.click();
+			browser.click(accountStatements);
 
 			List<CibcAccountStatement> downloads = new ArrayList<>();
 			while (true)
@@ -103,11 +103,11 @@ public final class Cibc
 					break;
 				String accountNumberText = accountNumberElement.getText();
 				log.info("Stepping into account number: {}", accountNumberText);
-				accountNumberElement.click();
+				browser.click(accountNumberElement);
 				downloads.addAll(downloadStatements(accountNumberText, statements));
 				log.info("Stepping back");
 				WebElement backButton = client.findElement(BACK_TO_ACCOUNT_NUMBERS);
-				backButton.click();
+				browser.click(backButton);
 			}
 			return downloads;
 		}
@@ -133,7 +133,7 @@ public final class Cibc
 	{
 		// Expand all years
 		for (WebElement collapsedYear : client.findElements(COLLAPSED_YEARS))
-			collapsedYear.click();
+			browser.click(collapsedYear);
 
 		List<CibcAccountStatement> downloads = new ArrayList<>();
 		for (WebElement statement : client.findElements(STATEMENT_DATE))

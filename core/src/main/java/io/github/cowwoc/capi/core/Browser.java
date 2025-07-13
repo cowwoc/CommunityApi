@@ -184,10 +184,22 @@ public final class Browser
 			{
 				if (i == 2)
 					throw e;
+				// Sometimes a page header covers the element, so we try scrolling further up
+				scrollToElementWithOffset(element, i * 100);
 				WebDriverWait wait = new WebDriverWait(webDriver, Duration.ofMinutes(1));
 				wait.until(_ -> ExpectedConditions.elementToBeClickable(element));
 			}
 		}
+	}
+
+	private void scrollToElementWithOffset(WebElement element, int offset)
+	{
+		JavascriptExecutor js = (JavascriptExecutor) webDriver;
+		js.executeScript("""
+				const element = arguments[0];
+				const boundingBox = element.getBoundingClientRect();
+				window.scrollBy(0, boundingBox.top - arguments[1]);""",
+			element, offset);
 	}
 
 	/**
@@ -205,21 +217,17 @@ public final class Browser
 
 		// Execute Javascript in a new tab
 		JavascriptExecutor js = (JavascriptExecutor) webDriver;
-		WebElement downloadsManagerComponent = webDriver.findElement(By.cssSelector("downloads-manager"));
-		SearchContext downloadsManagerRoot = (SearchContext) js.executeScript("return arguments[0].shadowRoot",
-			downloadsManagerComponent);
-		assert downloadsManagerRoot != null;
+		SearchContext downloadsManagerRoot = webDriver.findElement(By.cssSelector("downloads-manager")).
+			getShadowRoot();
 
 		// Wait for the download to begin
 		WebDriverWait wait = new WebDriverWait(webDriver, Duration.ofMinutes(1));
 		SearchContext downloadItemRoot = wait.until(_ ->
 		{
-			WebElement downloadItemComponent = downloadsManagerRoot.findElement(By.cssSelector("downloads-item"));
-			SearchContext candidate = (SearchContext) js.executeScript("return arguments[0].shadowRoot",
-				downloadItemComponent);
-			assert candidate != null;
+			SearchContext candidate = downloadsManagerRoot.findElement(By.cssSelector("downloads-item")).
+				getShadowRoot();
 
-			Path targetPath = getDownlodTargetPath(candidate);
+			Path targetPath = getDownloadTargetPath(candidate);
 			try
 			{
 				FileTime lastModifiedTime = Files.getLastModifiedTime(targetPath);
@@ -234,7 +242,9 @@ public final class Browser
 
 		wait.until(_ ->
 		{
-			WebElement tag = downloadItemRoot.findElement(By.id("tag"));
+			// ShadowRoot throws "org.openqa.selenium.InvalidArgumentException: invalid argument: invalid locator"
+			// if By.id() is used, but By.cssSelector() works fine. Go figure.
+			WebElement tag = downloadItemRoot.findElement(By.cssSelector("#tag"));
 			// Use innerText to strip away comments
 			String tagText = (String) js.executeScript("return arguments[0].innerText", tag);
 			assert tagText != null;
@@ -243,16 +253,16 @@ public final class Browser
 				throw WrappedCheckedException.wrap(new IOException("Download failed: " + tagText));
 			// If the download did not fail and a progress bar is not present, then it is assumed to have completed
 			// successfully.
-			return !elementExists(downloadItemRoot, By.id("progress"));
+			return !elementExists(downloadItemRoot, By.cssSelector("#progress"));
 		});
-		WebElement fileLink = downloadItemRoot.findElement(By.id("file-link"));
+		WebElement fileLink = downloadItemRoot.findElement(By.cssSelector("#file-link"));
 
 		String source = fileLink.getDomAttribute("href");
 		assert source != null;
 		if (source.startsWith("blob:"))
 			source = source.substring("blob:".length());
 
-		Path target = getDownlodTargetPath(downloadItemRoot);
+		Path target = getDownloadTargetPath(downloadItemRoot);
 
 		// Close the download tab
 		webDriver.close();
@@ -260,9 +270,11 @@ public final class Browser
 		return new Download(URI.create(source), target);
 	}
 
-	private Path getDownlodTargetPath(SearchContext downloadItemRoot)
+	private Path getDownloadTargetPath(SearchContext downloadItemRoot)
 	{
-		String target = downloadItemRoot.findElement(By.id("file-icon")).getDomAttribute("src");
+		// ShadowRoot throws "org.openqa.selenium.InvalidArgumentException: invalid argument: invalid locator"
+		// if By.id() is used, but By.cssSelector() works fine. Go figure.
+		String target = downloadItemRoot.findElement(By.cssSelector("#file-icon")).getDomAttribute("src");
 		assert target != null;
 		requireThat(target, "target").startsWith("chrome://fileicon/?path=");
 
