@@ -1,6 +1,6 @@
 package io.github.cowwoc.capi.core;
 
-import io.github.cowwoc.pouch.core.WrappedCheckedException;
+import io.github.cowwoc.pouch10.core.WrappedCheckedException;
 import org.openqa.selenium.By;
 import org.openqa.selenium.ElementClickInterceptedException;
 import org.openqa.selenium.JavascriptExecutor;
@@ -29,7 +29,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
-import static io.github.cowwoc.requirements12.java.DefaultJavaValidators.requireThat;
+import static io.github.cowwoc.requirements13.java.DefaultJavaValidators.requireThat;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
@@ -208,6 +208,7 @@ public final class Browser
 	 * @param startAt the earliest time that the download may have been initialized
 	 * @return the downloaded file.
 	 */
+	@SuppressWarnings("PMD.VariableDeclarationUsageDistance")
 	public Download waitForDownload(Instant startAt)
 	{
 		// Based on https://stackoverflow.com/a/56570364/14731

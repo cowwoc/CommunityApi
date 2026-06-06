@@ -22,14 +22,15 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static io.github.cowwoc.requirements12.java.DefaultJavaValidators.requireThat;
+import static io.github.cowwoc.requirements13.java.DefaultJavaValidators.requireThat;
 
 /**
  * Utilities for the <a href="https://www.cibc.com/">CIBC website</a>.
  */
 public final class Cibc
 {
-	private static final By MY_DOCUMENTS = By.cssSelector("a[aria-label^=\"My Documents\"]");
+	private static final By MY_DOCUMENTS = By.cssSelector("a[aria-label^=\"My Documents\"]," +
+		"a[aria-label^=\"eStatements\"]");
 	private static final By ACCOUNT_STATEMENTS = By.xpath(
 		"//a[.//span[contains(text(),'Account statements')]]");
 	private static final By ACCOUNT_NUMBER = By.cssSelector("span.account-info span:nth-of-type(2)");
@@ -79,8 +80,12 @@ public final class Cibc
 			WebElement myDocuments = client.findElement(MY_DOCUMENTS);
 			browser.clickToOpenWindow(myDocuments);
 
-			WebElement accountStatements = client.findElement(ACCOUNT_STATEMENTS);
-			browser.click(accountStatements);
+			List<WebElement> headings = client.findElements(By.cssSelector("h2"));
+			if (headings.size() != 1 || !headings.getFirst().getText().equals("Account Statements"))
+			{
+				WebElement accountStatements = client.findElement(ACCOUNT_STATEMENTS);
+				browser.click(accountStatements);
+			}
 
 			List<CibcAccountStatement> downloads = new ArrayList<>();
 			while (true)

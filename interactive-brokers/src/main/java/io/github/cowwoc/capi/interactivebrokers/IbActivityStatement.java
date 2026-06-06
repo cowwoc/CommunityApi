@@ -28,8 +28,8 @@ import java.util.Set;
 import java.util.StringJoiner;
 import java.util.function.Predicate;
 
-import static io.github.cowwoc.requirements12.java.DefaultJavaValidators.requireThat;
-import static io.github.cowwoc.requirements12.java.DefaultJavaValidators.that;
+import static io.github.cowwoc.requirements13.java.DefaultJavaValidators.requireThat;
+import static io.github.cowwoc.requirements13.java.DefaultJavaValidators.that;
 
 /**
  * An activity statement.
@@ -453,7 +453,8 @@ public record IbActivityStatement(Header header, Account account,
 		for (Entry<String, MarkToMarket> entry : symbolToMarkToMarket.entrySet())
 		{
 			String symbol = entry.getKey();
-			Integer assetId = nextId++;
+			++nextId;
+			Integer assetId = nextId;
 			assetToTotalUnits.put(assetId, entry.getValue().startQuantity());
 			symbolToId.put(symbol, assetId);
 		}
@@ -541,7 +542,8 @@ public record IbActivityStatement(Header header, Account account,
 							symbol.strikePrice));
 
 						// The second trade opens a new position
-						assetId = nextId++;
+						++nextId;
+						assetId = nextId;
 						symbolToId.put(symbol.value, assetId);
 						BigDecimal commissionForOpen = commission.subtract(commissionForClose);
 						BigDecimal proceedsForOpen = proceeds.subtract(proceedsForClose);
@@ -567,7 +569,8 @@ public record IbActivityStatement(Header header, Account account,
 							if (assetId == null)
 							{
 								// The opening of a new trading position
-								assetId = nextId++;
+								++nextId;
+								assetId = nextId;
 								symbolToId.put(symbol.value, assetId);
 							}
 							assetToTotalUnits.put(assetId, newTotalUnits);
@@ -847,7 +850,7 @@ public record IbActivityStatement(Header header, Account account,
 		 * @param symbol the String representation
 		 * @return the parsed symbol
 		 */
-		public static ParsedSymbol fromStatement(String symbol)
+		private static ParsedSymbol fromStatement(String symbol)
 		{
 			// e.g. SQQQ 17JUN22 42.0 P
 			String[] tokens = symbol.split(" ");
